@@ -1,17 +1,15 @@
 import { useState } from "react";
 import styles from "./styles/MultipleInputFields.module.css";
 
-function MultipleInputFields(){
+function MultipleInputFields({childToParent}){
 
-  const [isDisabled, setIsDisabled] = useState(false);
+  // const [isDisabled, setIsDisabled] = useState(false);
 
   const [inputFields, setInputFields] = useState([{
     address:'', 
   }]);
 
   const addInputField = ()=>{
-    //console.log(inputFields);
-    
     setInputFields([...inputFields, {
       address:'',
     }])
@@ -30,7 +28,11 @@ function MultipleInputFields(){
   }
 
   const addToWL = ()=>{
-    console.log(inputFields);
+    const addresses = [];
+    inputFields.forEach(e => {
+      addresses.push(e.address);
+    });
+    childToParent(addresses);
   }
 
   return(
@@ -46,7 +48,7 @@ function MultipleInputFields(){
                   <h3>Whitelisting Addresses</h3>
                   <div className="col">
                     <div className="form-group">
-                      <input type="text" disabled={isDisabled} onChange={(evnt)=>handleChange(index, evnt)} value={address} name="address" className={styles.input}  placeholder="0x1234...." />
+                      <input type="text" onChange={(evnt)=>handleChange(index, evnt)} value={address} name="address" className={styles.input}  placeholder="0x1234...." />
                       {(inputFields.length!==1)? <button className={styles.buttonX} onClick={removeInputFields}>X</button>:''}
                     </div>
                   </div>

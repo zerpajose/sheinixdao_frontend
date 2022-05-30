@@ -17,6 +17,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   // isOwner keep track if the current address is the Contract Owner
   const [isOwner, setIsOwner] = useState(false);
+  // data = addresses to get WL'd
+  const [data, setData] = useState([]);
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
   const web3ModalRef = useRef();
 
@@ -189,6 +191,34 @@ export default function Home() {
     }
   }
 
+  const childToParent = async (childdata) => {
+    try {
+      // We will need the signer later to get the user's address
+      // Even though it is a read transaction, since Signers are just special kinds of Providers,
+      // We can use it in it's place
+      const signer = await getProviderOrSigner(true);
+      const contract = new Contract(
+        CONTRACT_ADDRESS,
+        abi,
+        signer
+      );
+      // Get the address associated to the signer which is connected to  MetaMask
+      const address = await signer.getAddress();
+      
+      // call setAllowList function from the contract and pass the addresses array
+      const tx = await contract.setAllowList(childdata);
+
+      setLoading(true);
+      // wait for the transaction to get mined
+      await tx.wait();
+      setLoading(false);
+      window.alert("Addresses added to WL succesfully!");
+      
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   /*
     connectWallet: Connects the MetaMask wallet
   */
@@ -226,7 +256,7 @@ export default function Home() {
           </div>
         );
       } else if (isOwner) {
-        return(<MultipleInputFields />);
+        return(<MultipleInputFields childToParent={childToParent} />);
       } else {
         return (
           <div className={styles.description}>
