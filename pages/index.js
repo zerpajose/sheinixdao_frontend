@@ -4,6 +4,7 @@ import Web3Modal from "web3modal";
 import { providers, Contract, utils } from "ethers";
 import { useEffect, useRef, useState } from "react";
 import { CONTRACT_ADDRESS, abi } from "../constants";
+import MultipleInputFields from "../components/MultipleInputFields";
 
 export default function Home() {
   // walletConnected keep track of whether the user's wallet is connected or not
@@ -14,6 +15,8 @@ export default function Home() {
   const [hasToken, setHasToken] = useState(false);
   // loading is set to true when we are waiting for a transaction to get mined
   const [loading, setLoading] = useState(false);
+  // isOwner keep track if the current address is the Contract Owner
+  const [isOwner, setIsOwner] = useState(false);
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
   const web3ModalRef = useRef();
 
@@ -160,6 +163,32 @@ export default function Home() {
     }
   };
 
+  const checkIfIsOwner = async () =>{
+    try {
+      // We will need the signer later to get the user's address
+      // Even though it is a read transaction, since Signers are just special kinds of Providers,
+      // We can use it in it's place
+      const signer = await getProviderOrSigner(true);
+      const contract = new Contract(
+        CONTRACT_ADDRESS,
+        abi,
+        signer
+      );
+      // Get the address associated to the signer which is connected to  MetaMask
+      const address = await signer.getAddress();
+      
+      // call the balanceOf from the contract
+      const _isOwner = await contract.owner();
+
+      if(address == _isOwner){
+        setIsOwner(true);
+      }
+      
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   /*
     connectWallet: Connects the MetaMask wallet
   */
@@ -170,6 +199,7 @@ export default function Home() {
       await getProviderOrSigner();
       setWalletConnected(true);
       checkIfHasToken();
+      checkIfIsOwner();
       checkIfAddressInWhitelist();
     } catch (err) {
       console.error(err);
@@ -195,6 +225,8 @@ export default function Home() {
             You already have the token!
           </div>
         );
+      } else if (isOwner) {
+        return(<MultipleInputFields />);
       } else {
         return (
           <div className={styles.description}>
