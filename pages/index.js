@@ -8,6 +8,7 @@ import MultipleInputFields from "../components/MultipleInputFields";
 import VideoLogo from "../components/VideoLogo";
 import PauseUnpause from "../components/PauseUnpause";
 import ChangeMintPrice from "../components/ChangeMintPrice";
+import Withdraw from "../components/Withdraw";
 
 export default function Home() {
   // walletConnected keep track of whether the user's wallet is connected or not
@@ -22,6 +23,8 @@ export default function Home() {
   const [isOwner, setIsOwner] = useState(false);
   // data = addresses to get WL'd
   const [paused, setPaused] = useState(false);
+  // pricePerToken
+  const [tokenPrice, setTokenPrice] = useState("");
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
   const web3ModalRef = useRef();
 
@@ -138,6 +141,30 @@ export default function Home() {
     }
   };
 
+  const pricePerToken = async () => {
+    try {
+      // We need a Signer here since this is a 'write' transaction.
+      const signer = await getProviderOrSigner(true);
+      // Create a new instance of the Contract with a Signer, which allows
+      // update methods
+      const contract = new Contract(
+        CONTRACT_ADDRESS,
+        abi,
+        signer
+      );
+      // call the mint from the contract to mint the Crypto Dev
+      const tx = await contract.pricePerToken();
+      const actualValue = utils.formatEther(tx);
+      console.log(actualValue);
+      
+      setTokenPrice(actualValue);
+      console.log(tokenPrice);
+      
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   /**
    * publicMint: Mint an NFT after the presale
    */
@@ -153,10 +180,13 @@ export default function Home() {
         signer
       );
       // call the mint from the contract to mint the Crypto Dev
+      await pricePerToken();
+      console.log("tokenPrice: ", tokenPrice);
+      
       const tx = await contract.mintAllowList({
         // value signifies the cost of one crypto dev which is "0.001" eth.
         // We are parsing `0.01` string to ether using the utils library from ethers.js
-        value: utils.parseEther("0.001"),
+        value: tokenPrice,
       });
       setLoading(true);
       // wait for the transaction to get mined
@@ -322,6 +352,33 @@ export default function Home() {
     }
   }
 
+  const doWithdraw = async () =>{
+    try {
+      // We will need the signer later to get the user's address
+      // Even though it is a read transaction, since Signers are just special kinds of Providers,
+      // We can use it in it's place
+      const signer = await getProviderOrSigner(true);
+      const contract = new Contract(
+        CONTRACT_ADDRESS,
+        abi,
+        signer
+      );
+      // Get the address associated to the signer which is connected to  MetaMask
+      const address = await signer.getAddress();
+     
+      const tx = await contract.withdraw();
+
+      setLoading(true);
+      // wait for the transaction to get mined
+      await tx.wait();
+      setLoading(false);
+      window.alert("Contract Ether withdrew to Owner account");
+      
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   /*
     connectWallet: Connects the MetaMask wallet
   */
@@ -370,6 +427,9 @@ export default function Home() {
             <hr></hr>
             <h3>Change Mint Price</h3>
             <ChangeMintPrice doChangeMintPrice={doChangeMintPrice} />
+            <hr></hr>
+            <h3>Withdraw Ether from contract to Owner</h3>
+            <Withdraw doWithdraw={doWithdraw} />
           </div>
         );
       } else {
