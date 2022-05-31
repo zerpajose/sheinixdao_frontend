@@ -1,10 +1,13 @@
 import Head from "next/head";
 import styles from "../styles/Home.module.css";
 import Web3Modal from "web3modal";
-import { providers, Contract, utils } from "ethers";
+import { providers, Contract, utils, BigNumber } from "ethers";
 import { useEffect, useRef, useState } from "react";
 import { CONTRACT_ADDRESS, abi } from "../constants";
 import MultipleInputFields from "../components/MultipleInputFields";
+import VideoLogo from "../components/VideoLogo";
+import PauseUnpause from "../components/PauseUnpause";
+import ChangeMintPrice from "../components/ChangeMintPrice";
 
 export default function Home() {
   // walletConnected keep track of whether the user's wallet is connected or not
@@ -18,7 +21,7 @@ export default function Home() {
   // isOwner keep track if the current address is the Contract Owner
   const [isOwner, setIsOwner] = useState(false);
   // data = addresses to get WL'd
-  const [data, setData] = useState([]);
+  const [paused, setPaused] = useState(false);
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
   const web3ModalRef = useRef();
 
@@ -191,6 +194,29 @@ export default function Home() {
     }
   }
 
+  const isPaused = async () => {
+    try {
+      // We will need the signer later to get the user's address
+      // Even though it is a read transaction, since Signers are just special kinds of Providers,
+      // We can use it in it's place
+      const signer = await getProviderOrSigner(true);
+      const contract = new Contract(
+        CONTRACT_ADDRESS,
+        abi,
+        signer
+      );
+      // Get the address associated to the signer which is connected to  MetaMask
+      const address = await signer.getAddress();
+      
+      // call setAllowList function from the contract and pass the addresses array
+      const paused = await contract.paused();
+      setPaused(paused);
+      
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   const childToParent = async (childdata) => {
     try {
       // We will need the signer later to get the user's address
@@ -213,6 +239,83 @@ export default function Home() {
       await tx.wait();
       setLoading(false);
       window.alert("Addresses added to WL succesfully!");
+      
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  const doChangeMintPrice = async (newPrice) => {
+    try {
+      // We will need the signer later to get the user's address
+      // Even though it is a read transaction, since Signers are just special kinds of Providers,
+      // We can use it in it's place
+      const signer = await getProviderOrSigner(true);
+      const contract = new Contract(
+        CONTRACT_ADDRESS,
+        abi,
+        signer
+      );
+
+      const tx = await contract.changeMintPrice(utils.parseEther(newPrice));
+      setLoading(true);
+      await tx.wait();
+      setLoading(false);
+      window.alert("New price changed succesfully!");
+      
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  const doPause = async () =>{
+    try {
+      // We will need the signer later to get the user's address
+      // Even though it is a read transaction, since Signers are just special kinds of Providers,
+      // We can use it in it's place
+      const signer = await getProviderOrSigner(true);
+      const contract = new Contract(
+        CONTRACT_ADDRESS,
+        abi,
+        signer
+      );
+      // Get the address associated to the signer which is connected to  MetaMask
+      const address = await signer.getAddress();
+     
+      const tx = await contract.pause();
+
+      setLoading(true);
+      // wait for the transaction to get mined
+      await tx.wait();
+      setLoading(false);
+      window.alert("The NFT transfer has been paused!");
+      
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  const doUnpause = async () =>{
+    try {
+      // We will need the signer later to get the user's address
+      // Even though it is a read transaction, since Signers are just special kinds of Providers,
+      // We can use it in it's place
+      const signer = await getProviderOrSigner(true);
+      const contract = new Contract(
+        CONTRACT_ADDRESS,
+        abi,
+        signer
+      );
+      // Get the address associated to the signer which is connected to  MetaMask
+      const address = await signer.getAddress();
+     
+      const tx = await contract.unpause();
+
+      setLoading(true);
+      // wait for the transaction to get mined
+      await tx.wait();
+      setLoading(false);
+      window.alert("The NFT transfer has been unpaused!");
       
     } catch (err) {
       console.error(err);
@@ -256,7 +359,19 @@ export default function Home() {
           </div>
         );
       } else if (isOwner) {
-        return(<MultipleInputFields childToParent={childToParent} />);
+        isPaused();
+        return(
+          <div>
+            <hr></hr>
+            <MultipleInputFields childToParent={childToParent} />
+            <hr></hr>
+            <h3>Pause/Unpause</h3>
+            <PauseUnpause paused={paused} doPause={doPause} doUnpause={doUnpause} />
+            <hr></hr>
+            <h3>Change Mint Price</h3>
+            <ChangeMintPrice doChangeMintPrice={doChangeMintPrice} />
+          </div>
+        );
       } else {
         return (
           <div className={styles.description}>
@@ -306,12 +421,12 @@ export default function Home() {
           {renderButton()}
         </div>
         <div>
-          <img className={styles.image} src="./crypto-devs.svg" />
+          <VideoLogo />
         </div>
       </div>
 
       <footer className={styles.footer}>
-        Made with &#10084; by Crypto Devs
+        Made with &#10084; by CryptoVincent
       </footer>
     </div>
   );

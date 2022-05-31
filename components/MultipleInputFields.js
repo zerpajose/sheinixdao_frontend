@@ -3,8 +3,6 @@ import styles from "./styles/MultipleInputFields.module.css";
 
 function MultipleInputFields({childToParent}){
 
-  // const [isDisabled, setIsDisabled] = useState(false);
-
   const [inputFields, setInputFields] = useState([{
     address:'', 
   }]);
@@ -19,6 +17,7 @@ function MultipleInputFields({childToParent}){
     rows.splice(index, 1);
     setInputFields(rows);
   }
+  
   const handleChange = (index, evnt)=>{
     const { name, value } = evnt.target;
     
