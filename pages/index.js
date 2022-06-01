@@ -1,7 +1,7 @@
 import Head from "next/head";
 import styles from "../styles/Home.module.css";
 import Web3Modal from "web3modal";
-import { providers, Contract, utils, BigNumber } from "ethers";
+import { providers, Contract, utils } from "ethers";
 import { useEffect, useRef, useState } from "react";
 import { CONTRACT_ADDRESS, abi } from "../constants";
 import MultipleInputFields from "../components/MultipleInputFields";
@@ -24,7 +24,7 @@ export default function Home() {
   // data = addresses to get WL'd
   const [paused, setPaused] = useState(false);
   // pricePerToken
-  const [tokenPrice, setTokenPrice] = useState("");
+  const [tokenPrice, setTokenPrice] = useState('');
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
   const web3ModalRef = useRef();
 
@@ -154,11 +154,11 @@ export default function Home() {
       );
       // call the mint from the contract to mint the Crypto Dev
       const tx = await contract.pricePerToken();
-      const actualValue = utils.formatEther(tx);
-      console.log(actualValue);
+      //console.log(`wei: ${utils.formatUnits(tx, "wei")}`);
+      //const actualValue = utils.formatEther(tx);
+      const actualValue = utils.formatUnits(tx, "wei");
       
       setTokenPrice(actualValue);
-      console.log(tokenPrice);
       
     } catch (err) {
       console.error(err);
@@ -181,18 +181,23 @@ export default function Home() {
       );
       // call the mint from the contract to mint the Crypto Dev
       await pricePerToken();
-      console.log("tokenPrice: ", tokenPrice);
-      
-      const tx = await contract.mintAllowList({
-        // value signifies the cost of one crypto dev which is "0.001" eth.
-        // We are parsing `0.01` string to ether using the utils library from ethers.js
-        value: tokenPrice,
+
+      setTokenPrice(async (state) => {
+
+        const tx = await contract.mintAllowList({
+          value: state,
+        });
+
+        setLoading(true);
+        await tx.wait();
+        setLoading(false);
+        
+        window.alert("You successfully minted a Sheinix DAO NFT!");
+        return state;
+
       });
-      setLoading(true);
-      // wait for the transaction to get mined
-      await tx.wait();
-      setLoading(false);
-      window.alert("You successfully minted a Sheinix DAO NFT!");
+      
+      
     } catch (err) {
       console.error(err);
     }
