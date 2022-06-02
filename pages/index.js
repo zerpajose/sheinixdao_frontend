@@ -154,8 +154,7 @@ export default function Home() {
       );
       // call the mint from the contract to mint the Crypto Dev
       const tx = await contract.pricePerToken();
-      //console.log(`wei: ${utils.formatUnits(tx, "wei")}`);
-      //const actualValue = utils.formatEther(tx);
+      
       const actualValue = utils.formatUnits(tx, "wei");
       
       setTokenPrice(actualValue);
@@ -180,23 +179,16 @@ export default function Home() {
         signer
       );
       // call the mint from the contract to mint the Crypto Dev
-      await pricePerToken();
 
-      setTokenPrice(async (state) => {
-
-        const tx = await contract.mintAllowList({
-          value: state,
-        });
-
-        setLoading(true);
-        await tx.wait();
-        setLoading(false);
-        
-        window.alert("You successfully minted a Sheinix DAO NFT!");
-        return state;
-
+      const tx = await contract.mintAllowList({
+        value: tokenPrice,
       });
+
+      setLoading(true);
+      await tx.wait();
+      setLoading(false);
       
+      window.alert("You successfully minted a Sheinix DAO NFT!");
       
     } catch (err) {
       console.error(err);
@@ -467,6 +459,7 @@ export default function Home() {
         disableInjectedProvider: false,
       });
       connectWallet();
+      pricePerToken();
     }
   }, [walletConnected]);
 
